@@ -14,7 +14,14 @@ import (
 func TestProject1(t *testing.T) {
 	ctx := context.Background()
 	err := rv.Revolve(ctx, rv.Options(
-		rv.WithStdLogger(),
+		rv.WithLogger(rv.LogFunc(func(lvl rv.LogLevel, format string, args ...any) {
+			switch lvl {
+			case rv.LogLevelInfo:
+				log.Printf("customLogFunc: "+format, args...)
+			case rv.LogLevelDebug:
+				log.Printf("customLogFunc: debug:"+format, args...)
+			}
+		})),
 		rv.WithDuckTyping(),
 		rv.Supply(ctx),
 		rv.Provide(

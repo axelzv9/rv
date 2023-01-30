@@ -1,9 +1,5 @@
 package rv
 
-import (
-	"log"
-)
-
 type Option interface {
 	apply(*revolver) error
 }
@@ -38,7 +34,7 @@ func Invoke(funcs ...any) Option {
 
 func WithDuckTyping() Option {
 	return optionFunc(func(rv *revolver) error {
-		rv.duckTyping = true
+		rv.assignable = duckTypingAssignable
 		return nil
 	})
 }
@@ -50,27 +46,17 @@ func WithDryRun() Option {
 	})
 }
 
-func WithDebug() Option {
+func WithLogger(target any) Option {
 	return optionFunc(func(rv *revolver) error {
-		rv.debugf = log.Printf
-		return nil
-	})
-}
-
-type LogFunc func(format string, args ...any)
-
-func devNull(_ string, _ ...any) {}
-
-func WithLogger(logFunc LogFunc) Option {
-	return optionFunc(func(rv *revolver) error {
-		rv.printf = logFunc
-		return nil
-	})
-}
-
-func WithStdLogger() Option {
-	return optionFunc(func(rv *revolver) error {
-		rv.printf = log.Printf
+		provide, err := parseLoggerProvide(target)
+		if err != nil {
+			return err
+		}
+		invoke, _ := parseInvoke(func(logger Logger) {
+			rv.logger = logger
+		})
+		rv.provides = append(rv.provides, provide)
+		rv.loggerInvoker = invoke
 		return nil
 	})
 }
@@ -120,3 +106,19 @@ func invokeOption(target any) optionFunc {
 		return nil
 	}
 }
+
+// func loggerOption(target any) optionFunc {
+// switch logger := target.(type) {
+// case Logger:
+// 	return func(rv *revolver) error {
+// 		rv.logger = logger
+// 		return nil
+// 	}
+// case LogFunc:
+// 	return func(rv *revolver) error {
+// 		rv.logger = logger
+// 		return nil
+// 	}
+// }
+// return
+// }
